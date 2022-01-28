@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  <div class="post">
+    <div class="post_body md">
+      <p style="text-align:center;">
+        <b>Flood Archive</b><br/>
+        Last update: {{ last_update_time }}
+      </p>
+    </div>
+  </div>
+
+  {% for p in posts -%}
+  <div class="post">
+    <p class="post_header">
+      <span class="post_link">
+        <a href="{{ p.full_link }}" rel="nofollow">reddit</a>
+      </span>
+      <span class="dot">•</span>
+      <span class="created">{{ p.created }}</span>
+    </p>
+    <h1 class="post_title">{{ p.title }}</h1>
+    <div class="post_body md">{{ p.selftext }}</div>
+  </div>
+  {% endfor %}
+
+{% endblock %}

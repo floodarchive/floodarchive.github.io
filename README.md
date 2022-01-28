@@ -1,2 +1,2 @@
 # floodarchive.github.io
-Static web page
+This is static web page

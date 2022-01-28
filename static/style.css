@@ -1,0 +1,116 @@
+@import url('https://rsms.me/inter/inter.css');
+
+html, body {
+  margin: 0;
+  color: white;
+  font-size: 15px;
+  background: #0F0F0F;
+  font-family: 'Inter', sans-serif;;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.post {
+  margin: auto;
+  max-width: 750px;
+  margin-top: 10px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  background: #161616;
+  border: 1px solid #333;
+}
+
+.post_header {
+  opacity: 0.5;
+  line-height: 25px;
+  margin: 5px 15px 5px;
+}
+
+.post_title {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 15px 15px 5px;
+}
+
+.post_body {
+  opacity: 0.9;
+  font-weight: normal;
+  padding: 5px 15px 10px;
+}
+
+.post_link {
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.created {
+  font-size: 10px;
+}
+
+.dot {
+  opacity: 0.5;
+  font-size: 12px;
+}
+
+/* Markdown */
+
+.md h1 { font-size: 22px; }
+.md h2 { font-size: 20px; }
+.md h3 { font-size: 18px; }
+.md h4 { font-size: 16px; }
+.md h5 { font-size: 14px; }
+.md h6 { font-size: 12px; }
+
+.md blockquote {
+	padding: 10px;
+	background: #161616;
+	margin: 4px 0 4px 5px;
+	border-left: 4px solid #333;
+}
+
+.md a, .md a * {
+  color: aqua;
+}
+
+.md .md-spoiler-text {
+	background: #333;
+	color: transparent;
+}
+
+.md .md-spoiler-text:hover {
+  color: white;
+  background: #222;
+}
+
+.md li { margin: 5px 0; }
+
+.md pre {
+  padding: 20px;
+  overflow: auto;
+  margin-top: 10px;
+  border-radius: 5px;
+  background: #1f1f1f;
+}
+
+.md table {
+  margin: 5px;
+  overflow-x: auto;
+}
+
+.md code {
+  font-size: 14px;
+  font-family: monospace, sans-serif;
+}
+
+.md hr {
+  border: 0px;
+  height: 1px;
+  margin: 8px 0px;
+  border-top: 1px solid #333;
+}
+
+.md code:not(.md pre > code) { background: #333; }
