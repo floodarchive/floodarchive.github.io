@@ -25,13 +25,11 @@ class StaticPageGenerator:
     def __init__(self):
         self.env = Environment(loader=FileSystemLoader("templates"))
 
-    def render_page(self, last_update_time, posts):
+    def render_page(self, posts):
         template = self.env.get_template("post.html")
 
         with open("index.html", "w+") as file:
-            file.write(
-                template.render(last_update_time=last_update_time, posts=posts)
-            )
+            file.write(template.render(posts=posts))
 
 
 while True:
@@ -67,4 +65,4 @@ while True:
 
 if __name__ == "__main__":
     generator = StaticPageGenerator()
-    generator.render_page(dt.now().ctime(), posts[::-1])  # Reverse list
+    generator.render_page(posts[::-1])  # Reverse list
