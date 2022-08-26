@@ -2,22 +2,26 @@
 
 #
 # Static web page builder tool from Reddit post data
-# Author: Adil Gürbüz (beucismis) <beucismis@tutamail.com>
+# Author: beucismis <beucismis@tutamail.com>
 #
 
+from time import ctime
 from json import loads
+from typing import List, Dict
 from datetime import datetime as dt
+
 from markdown import markdown
 from urllib3 import PoolManager
 from jinja2 import Environment, FileSystemLoader
 
 
+LIMIT = 100
 SUBREDDIT = "kopyamakarna"
 IGNORE_FLAIRS = ["META", "DUYURU"]
-URL = "https://api.pushshift.io/reddit/search/submission"
+API_BASE_URL = "https://api.pushshift.io/reddit/search/submission"
 
-posts = []
 after = 1540846800  # Subreddit created_utc
+all_submissions = []
 http = PoolManager()
 
 
@@ -25,44 +29,55 @@ class StaticPageGenerator:
     def __init__(self):
         self.env = Environment(loader=FileSystemLoader("templates"))
 
-    def render_page(self, posts):
+    def render_page(self, submissions: List[Dict]):
         template = self.env.get_template("post.html")
 
         with open("index.html", "w+") as file:
-            file.write(template.render(posts=posts))
+            file.write(
+                template.render(
+                    last_build_date=ctime(), submissions=submissions
+                )
+            )
 
 
 while True:
-    r = http.request(
-        "GET", URL, fields={"subreddit": SUBREDDIT, "after": after, "limit": 100}
+    response = http.request(
+        "GET", API_BASE_URL, fields={
+            "subreddit": SUBREDDIT, "after": after, "limit": LIMIT
+        }
     )
 
-    if r.status != 200:
+    if response.status != 200:
         break
-    data = loads(r.data.decode("utf-8"))["data"]
-    if not (len(data)):
+    submissions = loads(response.data.decode("utf-8"))["data"]
+    if not len(submissions):
         break
-    after = data[-1]["created_utc"]
+    after = submissions[-1]["created_utc"]
 
-    for i in range(len(data)):
-        if data[i].get("link_flair_text", "") in IGNORE_FLAIRS:
+    for submission in submissions:
+        if submission.get("link_flair_text", "") in IGNORE_FLAIRS:
             continue
 
-        title = data[i]["title"]
-        selftext = markdown(data[i].get("selftext", ""))
-        created = dt.fromtimestamp(data[i]["created_utc"]).ctime()
-        full_link = data[i]["full_link"]
+        selftext = markdown(
+            submission.get("selftext", "")
+        )
+        if selftext.strip() in "<p>[removed]</p>":
+            continue
 
-        posts.append(
+        all_submissions.append(
             {
-                "title": title,
+                "title": submission.get("title"),
                 "selftext": selftext,
-                "created": created,
-                "full_link": full_link,
+                "full_link": submission.get("full_link"),
+                "created": dt.fromtimestamp(
+                    submission.get("created_utc")
+                ).ctime(),
             }
         )
+
+        print(submission.get("title"))
 
 
 if __name__ == "__main__":
     generator = StaticPageGenerator()
-    generator.render_page(posts[::-1])  # Reverse list
+    generator.render_page(all_submissions[::-1])
