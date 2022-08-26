@@ -75,8 +75,6 @@ while True:
             }
         )
 
-        print(submission.get("title"))
-
 
 if __name__ == "__main__":
     generator = StaticPageGenerator()
