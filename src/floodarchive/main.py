@@ -12,23 +12,22 @@ LIMIT = 100
 SORT = "asc"
 SUBREDDIT = "kopyamakarna"
 DEFAULT_AFTER = 1540846800
+POSTS_DB_FILE = "posts.json"
 IGNORE_FLAIRS = ["META", "DUYURU"]
-STATE_FILE = "floodarchive_state.json"
 API_BASE_URL = "https://api.pullpush.io"
 
 
-def load_last_after() -> int:
+def load_posts() -> List[Dict]:
     try:
-        with open(STATE_FILE, "r") as f:
-            data = json.load(f)
-            return data.get("after", DEFAULT_AFTER)
+        with open(POSTS_DB_FILE, "r") as f:
+            return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
-        return DEFAULT_AFTER
+        return []
 
 
-def save_last_after(timestamp: int) -> None:
-    with open(STATE_FILE, "w+") as f:
-        json.dump({"after": timestamp}, f)
+def save_posts(posts: List[Dict]) -> None:
+    with open(POSTS_DB_FILE, "w+") as f:
+        json.dump(posts, f, indent=2)
 
 
 class StaticPageGenerator:
@@ -45,12 +44,13 @@ class StaticPageGenerator:
 
 
 def main() -> None:
-    after = load_last_after()
-    all_submissions = []
+    all_submissions = load_posts()
+    after = all_submissions[-1]["created_utc"] if all_submissions else DEFAULT_AFTER
+    print(f"Loaded {len(all_submissions)} existing posts.")
 
     while True:
         previous_after = after
-        print(f"Fetching data after: {dt.fromtimestamp(after).isoformat()}")
+        print(f"Fetching new data after: {dt.fromtimestamp(after).isoformat()}")
         response = requests.get(
             API_BASE_URL + "/reddit/search/submission",
             params={
@@ -69,41 +69,37 @@ def main() -> None:
                 continue
             break
 
-        submissions = response.json().get("data", [])
-        print(f"Found {len(submissions)} submissions.")
+        new_batch = response.json().get("data", [])
+        print(f"Found {len(new_batch)} new submissions.")
 
-        if not submissions:
+        if not new_batch:
             break
 
-        after = submissions[-1]["created_utc"]
+        for submission in new_batch:
+            if any(p.get("url") == submission.get("url") for p in all_submissions):
+                continue
+
+            selftext = markdown(submission.get("selftext", ""))
+            if selftext.strip() in "<p>[removed]</p>":
+                continue
+            if submission.get("link_flair_text", "") in IGNORE_FLAIRS:
+                continue
+
+            submission["created"] = dt.fromtimestamp(submission.get("created_utc")).ctime()
+            all_submissions.append(submission)
+
+        after = all_submissions[-1]["created_utc"]
 
         if after <= previous_after:
             print("Timestamp not advancing, incrementing by 1 to break loop.")
             after += 1
 
-        for submission in submissions:
-            if submission.get("link_flair_text", "") in IGNORE_FLAIRS:
-                continue
-
-            selftext = markdown(submission.get("selftext", ""))
-
-            if selftext.strip() in "<p>[removed]</p>":
-                continue
-
-            all_submissions.append(
-                {
-                    "title": submission.get("title"),
-                    "selftext": selftext,
-                    "url": submission.get("url"),
-                    "created": dt.fromtimestamp(submission.get("created_utc")).ctime(),
-                }
-            )
-
-    print(f"Saving last timestamp to state file: {dt.fromtimestamp(after).isoformat()}")
-    save_last_after(after)
+    print(f"Total posts: {len(all_submissions)}. Saving to {POSTS_DB_FILE}.")
+    save_posts(all_submissions)
 
     generator = StaticPageGenerator()
     generator.render_page(all_submissions[::-1])
+    print("Static page generated successfully.")
 
 
 if __name__ == "__main__":
