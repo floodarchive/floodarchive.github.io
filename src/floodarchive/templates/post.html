@@ -1,23 +1,22 @@
 {% extends "base.html" %}
-
 {% block content %}
   <div class="post">
-    <p class="post_body" style="text-align:center;">
-      <b>Total flood:</b> {{ submissions|length }}</br>
-      <b>Last build date:</b> {{ last_build_date }}
+    <p class="post-body">
+      <b>Total post:</b> {{ submissions|length }}</br>
+      <b>Last build:</b> {{ last_build_date }}
     </p>
   </div>
   {% for submission in submissions -%}
   <div class="post">
-    <p class="post_header">
-      <span class="post_link">
+    <p class="post-header">
+      <span class="post-created">{{ submission.created }}</span>
+      <span class="dot">•</span>
+      <span class="post-url">
         <a href="{{ submission.url }}" rel="nofollow">reddit</a>
       </span>
-      <span class="dot">•</span>
-      <span class="created">{{ submission.created }}</span>
     </p>
-    <h1 class="post_title">{{ submission.title }}</h1>
-    <div class="post_body md">{{ submission.selftext }}</div>
+    <h1 class="post-title">{{ submission.title }}</h1>
+    <div class="post-body md" style="line-height: 1.6;">{{ submission.selftext }}</div>
   </div>
   {% endfor %}
 {% endblock %}

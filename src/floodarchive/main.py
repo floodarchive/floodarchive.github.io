@@ -8,6 +8,8 @@ import requests
 from jinja2 import Environment, FileSystemLoader
 from markdown import markdown
 
+from floodarchive.cli import parse_args
+
 LIMIT = 100
 SORT = "asc"
 SUBREDDIT = "kopyamakarna"
@@ -44,7 +46,9 @@ class StaticPageGenerator:
 
 
 def main() -> None:
+    args = parse_args()
     all_submissions = load_posts()
+    all_submissions = [p for p in all_submissions if p.get("selftext", "").strip()]
     after = all_submissions[-1]["created_utc"] if all_submissions else DEFAULT_AFTER
     print(f"Loaded {len(all_submissions)} existing posts.")
 
@@ -62,12 +66,12 @@ def main() -> None:
         )
 
         if response.status_code != 200:
-            print(f"Failed with status code: {response.status_code}")
             if response.status_code == 429:
                 print("Rate limit exceeded, sleeping for 60 seconds...")
                 time.sleep(60)
                 continue
-            break
+
+            raise Exception(f"Failed with status code: {response.status_code}")
 
         new_batch = response.json().get("data", [])
         print(f"Found {len(new_batch)} new submissions.")
@@ -78,15 +82,20 @@ def main() -> None:
         for submission in new_batch:
             if any(p.get("url") == submission.get("url") for p in all_submissions):
                 continue
-
-            selftext = markdown(submission.get("selftext", ""))
-            if selftext.strip() in "<p>[removed]</p>":
-                continue
             if submission.get("link_flair_text", "") in IGNORE_FLAIRS:
                 continue
+            if "[removed]" in submission.get("selftext", ""):
+                continue
+            if not submission.get("selftext", "").strip():
+                continue
 
-            submission["created"] = dt.fromtimestamp(submission.get("created_utc")).ctime()
-            all_submissions.append(submission)
+            clean_submission = {
+                "title": submission.get("title"),
+                "url": submission.get("url"),
+                "created_utc": submission.get("created_utc"),
+                "selftext": submission.get("selftext", ""),
+            }
+            all_submissions.append(clean_submission)
 
         after = all_submissions[-1]["created_utc"]
 
@@ -97,8 +106,23 @@ def main() -> None:
     print(f"Total posts: {len(all_submissions)}. Saving to {POSTS_DB_FILE}.")
     save_posts(all_submissions)
 
+    if args.posts:
+        print(f"Limiting to {args.posts} posts.")
+        all_submissions = all_submissions[: args.posts]
+
+    submissions_for_template = []
+
+    for post in all_submissions:
+        submissions_for_template.append(
+            {
+                **post,
+                "created": dt.fromtimestamp(post.get("created_utc")).ctime(),
+                "selftext": markdown(post.get("selftext", "")),
+            }
+        )
+
     generator = StaticPageGenerator()
-    generator.render_page(all_submissions[::-1])
+    generator.render_page(submissions_for_template[::-1])
     print("Static page generated successfully.")
 
 
