@@ -30,3 +30,7 @@ path = "src/floodarchive/__about__.py"
 
 [project.scripts]
 floodarchive = "floodarchive.main:main"
+
+[tool.hatch.envs.default.scripts]
+test = "floodarchive {args:--posts 10}"
+format = "black -l 120 . && djlint . --reformat --format-css"
